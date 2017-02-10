@@ -53,12 +53,9 @@ void setup()
 	Serial.begin(57600);
 	Serial.println("Carlift Software Version 1.0");
 	liftPost masterPost;
-	//masterPost
 	liftPost slavePost;
-
-	
-  /* add setup code here */
-
+	masterPost.setEncoderPins(ENCODER1_A, ENCODER1_B);
+	slavePost.setEncoderPins(ENCODER2_A, ENCODER2_B);
 }
 
 void loop()
