@@ -1,4 +1,6 @@
- #include <RotaryEncoder.h>
+ #include <OneButton.h>
+#include "liftPost.h"
+
 
 #define	STOP 0
 #define UP 1
@@ -13,54 +15,114 @@
 #define MASTERDOWN 24
 #define SLAVEUP 20
 #define SLAVEDOWN 19
+#define ENCODERDIFFERENCE 1000
+#define DIFFERENCEWAIT 1000
 
-
-class liftPost
-{
-public:
-	liftPost();
-	~liftPost();
-	void setEncoderPins(int encA, int encB);
-
-private:
-	int encoderCount;
-	int state; //0 = stopped, 1 = Move Up, 2 = Move Down
-	int encA, encB;
-};
-
-liftPost::liftPost()
-{
-	encoderCount = 0;
-	state = 0;
-	encA = 0;
-	encB = 0;
-}
-
-liftPost::~liftPost()
-{
-
-}
-
-
-void liftPost::setEncoderPins(int encA, int encB)
-{
-	RotaryEncoder encoder(encA, encB);
-}
-
+OneButton upButton(RAISEBUTTON, 0);
+OneButton downButton(LOWERBUTTON, 0);
+liftPost masterPost;
+liftPost slavePost;
 
 void setup()
 {
 	Serial.begin(57600);
 	Serial.println("Carlift Software Version 1.0");
-	liftPost masterPost;
-	liftPost slavePost;
 	masterPost.setEncoderPins(ENCODER1_A, ENCODER1_B);
 	slavePost.setEncoderPins(ENCODER2_A, ENCODER2_B);
+	pinMode(MASTERUP, OUTPUT);
+	pinMode(MASTERDOWN, OUTPUT);
+	pinMode(SLAVEUP, OUTPUT);
+	pinMode(SLAVEDOWN, OUTPUT);
+}
+
+void moveLiftUP()
+{
+	if (abs((masterPost.getEncoderCount() - slavePost.getEncoderCount())) < ENCODERDIFFERENCE)
+	{
+		if (millis() - masterPost.getLastStopTime() > DIFFERENCEWAIT)
+		{
+			masterPost.setState(UP);
+			slavePost.setState(UP);
+			digitalWrite(MASTERUP, HIGH);
+			digitalWrite(SLAVEUP, HIGH);
+			Serial.println("LIFT MOVING UP");
+		}
+	}
+	else if (masterPost.getEncoderCount() - slavePost.getEncoderCount() < 0)
+	{
+		masterPost.setLastStopTime(millis());
+		if (millis() - masterPost.getLastStopTime() > DIFFERENCEWAIT)
+		{
+			masterPost.setState(STOP);
+			digitalWrite(MASTERUP, LOW);
+			digitalWrite(SLAVEUP, HIGH);
+		}
+	}
+	else
+	{
+		slavePost.setLastStopTime(millis());
+		if (millis() - slavePost.getLastStopTime() > DIFFERENCEWAIT)
+		{
+			slavePost.setState(STOP);
+			digitalWrite(MASTERUP, HIGH);
+			digitalWrite(SLAVEUP, LOW);
+		}
+	}
+}
+
+void moveLiftDown()
+{
+	if (abs((masterPost.getEncoderCount() - slavePost.getEncoderCount())) < ENCODERDIFFERENCE)
+	{
+		if (millis() - masterPost.getLastStopTime() > DIFFERENCEWAIT)
+		{
+			masterPost.setState(DOWN);
+			slavePost.setState(DOWN);
+			digitalWrite(MASTERDOWN, HIGH);
+			digitalWrite(SLAVEDOWN, HIGH);
+			Serial.println("LIFT MOVING DOWN");
+		}
+	}
+	else if (masterPost.getEncoderCount() - slavePost.getEncoderCount() < 0)
+	{
+		masterPost.setLastStopTime(millis());
+		if (millis() - masterPost.getLastStopTime() > DIFFERENCEWAIT)
+		{
+			masterPost.setState(STOP);
+			digitalWrite(MASTERDOWN, LOW);
+			digitalWrite(SLAVEDOWN, HIGH);
+		}
+	}
+	else
+	{
+		slavePost.setLastStopTime(millis());
+		if (millis() - slavePost.getLastStopTime() > DIFFERENCEWAIT)
+		{
+			slavePost.setState(STOP);
+			digitalWrite(MASTERDOWN, HIGH);
+			digitalWrite(SLAVEDOWN, LOW);
+		}
+	}
+}
+
+void upPressed()
+{
+	if (masterPost.getState() && slavePost.getState() != DOWN)
+	{
+		moveLiftUP();
+	}
+	
+}
+void downPressed()
+{
+	if (masterPost.getState() && slavePost.getState() != UP)
+	{
+		moveLiftDown();
+	}
 }
 
 void loop()
 {
-
-  /* add main program code here */
-
+	upButton.tick();
+	downButton.tick();
 }
