@@ -1,27 +1,32 @@
- #include <OneButton.h>
+#include <Adafruit_NeoPixel.h>
+#include <OneButton.h>
 #include "liftPost.h"
-
 
 #define	STOP 0
 #define UP 1
 #define DOWN 2
-#define ENCODER1_A 22
-#define ENCODER1_B 21
-#define ENCODER2_A 11
-#define ENCODER2_B 12
-#define RAISEBUTTON 7
-#define LOWERBUTTON 11
-#define MASTERUP 23
-#define MASTERDOWN 24
-#define SLAVEUP 20
-#define SLAVEDOWN 19
+#define ENCODER1_A 17
+#define ENCODER1_B 16
+#define ENCODER2_A 8
+#define ENCODER2_B 9
+#define RAISEBUTTON 4
+#define LOWERBUTTON 7
+#define MASTERUP 18
+#define MASTERDOWN 19
+#define SLAVEUP 15
+#define SLAVEDOWN 14
 #define ENCODERDIFFERENCE 1000
 #define DIFFERENCEWAIT 1000
+#define NUMPIXELS 12
 
 OneButton upButton(RAISEBUTTON, 0);
 OneButton downButton(LOWERBUTTON, 0);
 liftPost masterPost;
 liftPost slavePost;
+
+Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIND5, NEO_GRB + NEO_KHZ800);
+int delayval = 500; // delay for half a second
+
 
 void setup()
 {
@@ -33,6 +38,13 @@ void setup()
 	pinMode(MASTERDOWN, OUTPUT);
 	pinMode(SLAVEUP, OUTPUT);
 	pinMode(SLAVEDOWN, OUTPUT);
+	upButton.setPressTicks(600);
+	upButton.attachLongPressStart(upPressedStart);
+	downButton.attachLongPressStart(downPressedStart);
+	upButton.attachLongPressStop(upPressedStop);
+	downButton.attachLongPressStop(downPressedStop);
+	pixels.begin();
+	
 }
 
 void moveLiftUP()
@@ -105,24 +117,71 @@ void moveLiftDown()
 	}
 }
 
-void upPressed()
+void stopLift()
 {
+	Serial.println("STOP LIFT");
+	masterPost.setState(STOP);
+	slavePost.setState(STOP);
+	digitalWrite(MASTERUP, LOW);
+	digitalWrite(MASTERDOWN, LOW);
+	digitalWrite(SLAVEUP, LOW);
+	digitalWrite(SLAVEDOWN, LOW);
+}
+
+void upPressedStart()
+{
+	//pixels.clear();
+	Serial.println("UP BUTTON PRESSED");
+	pixels.setPixelColor(0, pixels.Color(0, 150, 0));
+	pixels.show();
+	masterPost.setState(UP);
+	slavePost.setState(UP);
 	if (masterPost.getState() && slavePost.getState() != DOWN)
 	{
 		moveLiftUP();
 	}
 	
 }
-void downPressed()
+void downPressedStart()
 {
-	if (masterPost.getState() && slavePost.getState() != UP)
+	Serial.println("DOWN BUTTON PRESSED");
+	//pixels.clear();
+	
+	if (!(masterPost.getState() && slavePost.getState()))
 	{
+		masterPost.setState(DOWN);
+		slavePost.setState(DOWN);
+		pixels.setPixelColor(1, pixels.Color(0, 150, 0));
+		pixels.show();
 		moveLiftDown();
 	}
+}
+
+void upPressedStop()
+{
+	//pixels.clear();
+	pixels.setPixelColor(6, pixels.Color(150, 0, 0));
+	pixels.show();
+	Serial.println("UP BUTTON RELEASED");
+	stopLift();
+}
+void downPressedStop()
+{
+	pixels.setPixelColor(7, pixels.Color(150, 0, 0));
+	pixels.show();
+	Serial.println("DOWN BUTTON Released");
+	stopLift();
 }
 
 void loop()
 {
 	upButton.tick();
 	downButton.tick();
+	pixels.clear();
+	//for (int i = 0; i<NUMPIXELS; i++) {
+	    //pixels.Color takes RGB values, from 0,0,0 up to 255,255,255
+	//pixels.setPixelColor(i, pixels.Color(0, 150, 0)); // Moderately bright green color.
+	//pixels.show(); // This sends the updated pixel color to the hardware.
+	//delay(delayval); // Delay for a period of time (in milliseconds).
+   // }
 }
