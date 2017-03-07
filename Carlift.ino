@@ -5,6 +5,16 @@
 #define	STOP 0
 #define UP 1
 #define DOWN 2
+
+//State Machine Variables
+#define WAITINGFORINPUT 0
+#define LIFTSTOP 1
+#define LIFTMOVEUP 2
+#define LIFTMOVEDOWN 3
+#define LIFTBALANCEMASTER 4
+#define LIFTBALANCESLAVE 5
+
+//Pin Definitions
 #define ENCODER1_A 17
 #define ENCODER1_B 16
 #define ENCODER2_A 8
@@ -15,29 +25,29 @@
 #define MASTERDOWN 19
 #define SLAVEUP 15
 #define SLAVEDOWN 14
+
+//Tuning Variable
 #define ENCODERDIFFERENCE 1000
 #define DIFFERENCEWAIT 1000
 #define NUMPIXELS 12
 
 OneButton upButton(RAISEBUTTON, 0);
 OneButton downButton(LOWERBUTTON, 0);
-liftPost masterPost;
-liftPost slavePost;
+liftPost masterPost(ENCODER1_A, ENCODER1_B, MASTERUP, MASTERDOWN);
+liftPost slavePost(ENCODER2_A, ENCODER2_B, SLAVEUP, SLAVEDOWN);
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIND5, NEO_GRB + NEO_KHZ800);
 int delayval = 500; // delay for half a second
 
+unsigned int state;
+
 
 void setup()
 {
+	state = 0;
 	Serial.begin(57600);
 	Serial.println("Carlift Software Version 1.0");
-	masterPost.setEncoderPins(ENCODER1_A, ENCODER1_B);
-	slavePost.setEncoderPins(ENCODER2_A, ENCODER2_B);
-	pinMode(MASTERUP, OUTPUT);
-	pinMode(MASTERDOWN, OUTPUT);
-	pinMode(SLAVEUP, OUTPUT);
-	pinMode(SLAVEDOWN, OUTPUT);
+	
 	upButton.setPressTicks(600);
 	upButton.attachLongPressStart(upPressedStart);
 	downButton.attachLongPressStart(downPressedStart);
@@ -45,6 +55,15 @@ void setup()
 	downButton.attachLongPressStop(downPressedStop);
 	pixels.begin();
 	
+}
+
+void tick()
+{
+	if (state == WAITINGFORINPUT)
+	{
+
+	}
+
 }
 
 void moveLiftUP()
@@ -120,12 +139,8 @@ void moveLiftDown()
 void stopLift()
 {
 	Serial.println("STOP LIFT");
-	masterPost.setState(STOP);
-	slavePost.setState(STOP);
-	digitalWrite(MASTERUP, LOW);
-	digitalWrite(MASTERDOWN, LOW);
-	digitalWrite(SLAVEUP, LOW);
-	digitalWrite(SLAVEDOWN, LOW);
+	masterPost.stopLift();
+	slavePost.stopLift();
 }
 
 void upPressedStart()
@@ -177,6 +192,7 @@ void loop()
 {
 	upButton.tick();
 	downButton.tick();
+	tick();
 	pixels.clear();
 	//for (int i = 0; i<NUMPIXELS; i++) {
 	    //pixels.Color takes RGB values, from 0,0,0 up to 255,255,255

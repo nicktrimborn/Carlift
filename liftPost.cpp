@@ -1,50 +1,63 @@
 
 #include "liftPost.h"
 
-liftPost::liftPost()
+liftPost::liftPost(int encA, int encB, int contactorUpPin, int contactorDownPin)
 {
-	encoderCount = 0;
-	state = STOP;
-	encA = 0;
-	encB = 0;
+	//initialise private variable
+	this->_encA = encA;
+	this->_encB = encB;
+	this->_contactorUpPin = contactorUpPin;
+	this->_contactorDownPin = contactorDownPin;
+	_encoderCount = 0;
+	_state = STOP;
+
+	//Setup Post Rotary Encoder
+	RotaryEncoder encoder(_encA, _encB);
+	
+	//Setup IO Pins for Post control Contactors
+	pinMode(_contactorUpPin, OUTPUT);
+	pinMode(_contactorDownPin, OUTPUT);
 }
 
 liftPost::~liftPost()
 {
-
+	
 }
 
-void liftPost::setEncoderPins(int encA, int encB)
+void liftPost::stopLift()
 {
-	RotaryEncoder encoder(encA, encB);
+	Serial.println("State Changed to: " + STOP);
+	digitalWrite(_contactorUpPin, LOW);
+	digitalWrite(_contactorDownPin, LOW);
 }
 
 void liftPost::clearEncoderCount()
 {
-	encoderCount = 0;
+	_encoderCount = 0;
 }
 
 unsigned long liftPost::getEncoderCount()
 {
-	return this->encoderCount;
+	return this->_encoderCount;
 }
 
 void liftPost::setLastStopTime(unsigned long time)
 {
-	lastStopStart = time;
+	_lastStopStart = time;
 }
 
 void liftPost::setState(unsigned int state)
 {
-	this->state = state;
+	this->_state = state;
+	Serial.println("State Changed to: " + state);
 }
 
 unsigned int liftPost::getState()
 {
-	return state;
+	return _state;
 }
 
 unsigned long liftPost::getLastStopTime()
 {
-	return this->lastStopStart;
+	return this->_lastStopStart;
 }

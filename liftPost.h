@@ -21,19 +21,21 @@
 class liftPost
 {
 public:
-	liftPost();
+	liftPost(int encA, int encB, int contactorUpPin, int contactorDownPin);
 	~liftPost();
-	void setEncoderPins(int encA, int encB);
 	void clearEncoderCount();
 	unsigned long getEncoderCount();
 	unsigned long getLastStopTime();
 	void setLastStopTime(unsigned long time);
 	void setState(unsigned int state);
 	unsigned int getState();
+	void stopLift();
 
 private:
-	unsigned long lastStopStart;
-	unsigned long encoderCount;
-	unsigned int state; //0 = stopped, 1 = Move Up, 2 = Move Down
-	int encA, encB;
+	unsigned long _lastStopStart;
+	unsigned long _encoderCount;
+	unsigned int _state; //0 = stopped, 1 = Move Up, 2 = Move Down
+	int _encA, _encB;  //Encoder Phase Pin Number
+	int _contactorUpPin, _contactorDownPin; //Contactor Pins
+	
 };
