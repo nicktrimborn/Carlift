@@ -44,6 +44,13 @@ unsigned int state;
 
 void setup()
 {
+	//Interupt Routine
+	cli();
+	PCICR |= 0b0000011; // Enables Ports B and C Pin Change Interrupts
+	PCMSK0 |= 0b00000011; // PCINT01 & PCINT02
+	PCMSK1 |= 0b00001100; // PCINT10 & PCINT11
+	sei();
+
 	state = 0;
 	Serial.begin(57600);
 	Serial.println("Carlift Software Version 1.0");
@@ -200,4 +207,17 @@ void loop()
 	//pixels.show(); // This sends the updated pixel color to the hardware.
 	//delay(delayval); // Delay for a period of time (in milliseconds).
    // }
+}
+
+
+ISR(PCINT0_vect) {
+	//value++;
+	masterPost.encoderTick();
+		//Serial.println("test");
+}
+
+ISR(PCINT1_vect) {
+	//value++;
+	slavePost.encoderTick();
+	//Serial.println("test");
 }

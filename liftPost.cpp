@@ -1,7 +1,7 @@
 
 #include "liftPost.h"
 
-liftPost::liftPost(int encA, int encB, int contactorUpPin, int contactorDownPin)
+liftPost::liftPost(int encA, int encB, int contactorUpPin, int contactorDownPin) : _rotEnc(encA, encB) 
 {
 	//initialise private variable
 	this->_encA = encA;
@@ -12,8 +12,7 @@ liftPost::liftPost(int encA, int encB, int contactorUpPin, int contactorDownPin)
 	_state = STOP;
 
 	//Setup Post Rotary Encoder
-	RotaryEncoder encoder(_encA, _encB);
-	
+		
 	//Setup IO Pins for Post control Contactors
 	pinMode(_contactorUpPin, OUTPUT);
 	pinMode(_contactorDownPin, OUTPUT);
@@ -29,6 +28,11 @@ void liftPost::stopLift()
 	Serial.println("State Changed to: " + STOP);
 	digitalWrite(_contactorUpPin, LOW);
 	digitalWrite(_contactorDownPin, LOW);
+}
+
+void liftPost::encoderTick()
+{
+	_rotEnc.tick();
 }
 
 void liftPost::clearEncoderCount()

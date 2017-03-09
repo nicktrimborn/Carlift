@@ -30,8 +30,9 @@ public:
 	void setState(unsigned int state);
 	unsigned int getState();
 	void stopLift();
-
+	void encoderTick();
 private:
+	RotaryEncoder _rotEnc;
 	unsigned long _lastStopStart;
 	unsigned long _encoderCount;
 	unsigned int _state; //0 = stopped, 1 = Move Up, 2 = Move Down
