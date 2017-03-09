@@ -31,12 +31,16 @@ public:
 	unsigned int getState();
 	void stopLift();
 	void encoderTick();
+	void moveLift(void);
+	
 private:
 	RotaryEncoder _rotEnc;
+	unsigned long _lastStateTransition;
 	unsigned long _lastStopStart;
 	unsigned long _encoderCount;
 	unsigned int _state; //0 = stopped, 1 = Move Up, 2 = Move Down
 	int _encA, _encB;  //Encoder Phase Pin Number
 	int _contactorUpPin, _contactorDownPin; //Contactor Pins
+	void _refresh();
 	
 };

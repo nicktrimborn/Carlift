@@ -40,10 +40,15 @@ Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIND5, NEO_GRB + NEO_KHZ
 int delayval = 500; // delay for half a second
 
 unsigned int state;
+unsigned long globalTime;
 
 
 void setup()
 {
+	//Initialise Variables
+	globalTime = 0;
+	state = WAITINGFORINPUT;
+
 	//Interupt Routine
 	cli();
 	PCICR |= 0b0000011; // Enables Ports B and C Pin Change Interrupts
@@ -51,132 +56,127 @@ void setup()
 	PCMSK1 |= 0b00001100; // PCINT10 & PCINT11
 	sei();
 
-	state = 0;
+	//Serial Setup	
 	Serial.begin(57600);
 	Serial.println("Carlift Software Version 1.0");
 	
+	//Button Configuration
 	upButton.setPressTicks(600);
 	upButton.attachLongPressStart(upPressedStart);
 	downButton.attachLongPressStart(downPressedStart);
 	upButton.attachLongPressStop(upPressedStop);
 	downButton.attachLongPressStop(downPressedStop);
-	pixels.begin();
 	
+	//pixels.begin();
 }
 
 void tick()
 {
+	unsigned long now = millis();
+	globalTime = millis();
+
+	//State Machine
 	if (state == WAITINGFORINPUT)
 	{
+		// do nothing
+	}
+	else if (state == LIFTSTOP)	
+	{
+		stopLift();
+	}
+	else if (state == LIFTMOVEUP) 
+	{
+		masterPost.setState(UP);
+		slavePost.setState(UP);
+	}
+	else if (state == LIFTMOVEDOWN) 
+	{
+		masterPost.setState(DOWN);
+		slavePost.setState(DOWN);
+	}
+	else if (state == LIFTBALANCEMASTER) 
+	{
 
+	}
+	else if (state == LIFTBALANCESLAVE)
+	{
+
+	}
+	else {
+		//should not get here 
+		Serial.println("FSM Undefined State - Should Not Be Here");
 	}
 
 }
 
 void moveLiftUP()
 {
-	if (abs((masterPost.getEncoderCount() - slavePost.getEncoderCount())) < ENCODERDIFFERENCE)
+	if (abs((masterPost.getEncoderCount() - slavePost.getEncoderCount())) <= ENCODERDIFFERENCE)
 	{
-		if (millis() - masterPost.getLastStopTime() > DIFFERENCEWAIT)
-		{
-			masterPost.setState(UP);
-			slavePost.setState(UP);
-			digitalWrite(MASTERUP, HIGH);
-			digitalWrite(SLAVEUP, HIGH);
-			Serial.println("LIFT MOVING UP");
-		}
+		//Lift within Balance Tolerance
+		state = LIFTMOVEUP;
 	}
 	else if (masterPost.getEncoderCount() - slavePost.getEncoderCount() < 0)
 	{
-		masterPost.setLastStopTime(millis());
-		if (millis() - masterPost.getLastStopTime() > DIFFERENCEWAIT)
-		{
-			masterPost.setState(STOP);
-			digitalWrite(MASTERUP, LOW);
-			digitalWrite(SLAVEUP, HIGH);
-		}
+		// Slave Unbalanced	
+		state = LIFTBALANCESLAVE;
 	}
-	else
+	else if(masterPost.getEncoderCount() - slavePost.getEncoderCount() > ENCODERDIFFERENCE)	
 	{
-		slavePost.setLastStopTime(millis());
-		if (millis() - slavePost.getLastStopTime() > DIFFERENCEWAIT)
-		{
-			slavePost.setState(STOP);
-			digitalWrite(MASTERUP, HIGH);
-			digitalWrite(SLAVEUP, LOW);
-		}
+		//Master Unbalanced
+		state = LIFTBALANCEMASTER;
+	}
+	else {
+		stopLift();
+		Serial.println("Ëncoder Error");
 	}
 }
 
 void moveLiftDown()
 {
-	if (abs((masterPost.getEncoderCount() - slavePost.getEncoderCount())) < ENCODERDIFFERENCE)
+	if (abs((masterPost.getEncoderCount() - slavePost.getEncoderCount())) <= ENCODERDIFFERENCE)
 	{
-		if (millis() - masterPost.getLastStopTime() > DIFFERENCEWAIT)
-		{
-			masterPost.setState(DOWN);
-			slavePost.setState(DOWN);
-			digitalWrite(MASTERDOWN, HIGH);
-			digitalWrite(SLAVEDOWN, HIGH);
-			Serial.println("LIFT MOVING DOWN");
-		}
+		//Lift within Balance Tolerance
+		state = LIFTMOVEDOWN;
 	}
 	else if (masterPost.getEncoderCount() - slavePost.getEncoderCount() < 0)
 	{
-		masterPost.setLastStopTime(millis());
-		if (millis() - masterPost.getLastStopTime() > DIFFERENCEWAIT)
-		{
-			masterPost.setState(STOP);
-			digitalWrite(MASTERDOWN, LOW);
-			digitalWrite(SLAVEDOWN, HIGH);
-		}
+		// Slave Unbalanced	
+		state = LIFTBALANCESLAVE;
 	}
-	else
+	else if (masterPost.getEncoderCount() - slavePost.getEncoderCount() > ENCODERDIFFERENCE)
 	{
-		slavePost.setLastStopTime(millis());
-		if (millis() - slavePost.getLastStopTime() > DIFFERENCEWAIT)
-		{
-			slavePost.setState(STOP);
-			digitalWrite(MASTERDOWN, HIGH);
-			digitalWrite(SLAVEDOWN, LOW);
-		}
+		//Master Unbalanced
+		state = LIFTBALANCEMASTER;
+	}
+	else {
+		stopLift();
+		Serial.println("Ëncoder Error");
 	}
 }
 
 void stopLift()
 {
+	state = LIFTSTOP;
+	masterPost.setState(STOP);
+	slavePost.setState(STOP);
 	Serial.println("STOP LIFT");
-	masterPost.stopLift();
-	slavePost.stopLift();
 }
 
 void upPressedStart()
 {
 	//pixels.clear();
 	Serial.println("UP BUTTON PRESSED");
-	pixels.setPixelColor(0, pixels.Color(0, 150, 0));
-	pixels.show();
-	masterPost.setState(UP);
-	slavePost.setState(UP);
-	if (masterPost.getState() && slavePost.getState() != DOWN)
-	{
-		moveLiftUP();
-	}
+	//pixels.setPixelColor(0, pixels.Color(0, 150, 0));
+	//pixels.show();
+	state = LIFTMOVEUP;
 	
 }
 void downPressedStart()
 {
 	Serial.println("DOWN BUTTON PRESSED");
 	//pixels.clear();
-	
-	if (!(masterPost.getState() && slavePost.getState()))
-	{
-		masterPost.setState(DOWN);
-		slavePost.setState(DOWN);
-		pixels.setPixelColor(1, pixels.Color(0, 150, 0));
-		pixels.show();
-		moveLiftDown();
-	}
+	state = LIFTMOVEDOWN;
 }
 
 void upPressedStop()

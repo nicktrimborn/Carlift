@@ -26,13 +26,50 @@ liftPost::~liftPost()
 void liftPost::stopLift()
 {
 	Serial.println("State Changed to: " + STOP);
-	digitalWrite(_contactorUpPin, LOW);
-	digitalWrite(_contactorDownPin, LOW);
+	setState(STOP);
 }
 
 void liftPost::encoderTick()
 {
 	_rotEnc.tick();
+}
+
+void liftPost::moveLift(void)
+{
+	if (_state == UP)
+	{
+		digitalWrite(_contactorUpPin, HIGH);
+		digitalWrite(_contactorUpPin, HIGH);
+		Serial.println("LIFT MOVING UP");
+	}
+	else if (_state == DOWN) {
+		digitalWrite(_contactorDownPin, HIGH);
+		digitalWrite(_contactorDownPin, HIGH);
+		Serial.println("LIFT MOVING UP");
+	}
+	else
+	{
+		stopLift();
+	}
+}
+
+void liftPost::_refresh()
+{
+	if (_state == UP)
+	{
+		digitalWrite(_contactorUpPin, HIGH);
+		digitalWrite(_contactorUpPin, HIGH);
+		Serial.println("LIFT MOVING UP");
+	}
+	else if (_state == DOWN) {
+		digitalWrite(_contactorDownPin, HIGH);
+		digitalWrite(_contactorDownPin, HIGH);
+		Serial.println("LIFT MOVING UP");
+	}
+	else
+	{
+		stopLift();
+	}
 }
 
 void liftPost::clearEncoderCount()
@@ -52,7 +89,8 @@ void liftPost::setLastStopTime(unsigned long time)
 
 void liftPost::setState(unsigned int state)
 {
-	this->_state = state;
+	_state = state;
+	_refresh();
 	Serial.println("State Changed to: " + state);
 }
 
